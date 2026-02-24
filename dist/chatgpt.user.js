@@ -54,11 +54,11 @@
     cursor: pointer;\r
 }\r
 \r
-.CheckBoxLabel[disabled] {\r
+.CheckBoxLabel[aria-disabled="true"] {\r
     opacity: 0.7;\r
 }\r
 \r
-.CheckBoxLabel[disabled] * {\r
+.CheckBoxLabel[aria-disabled="true"] * {\r
     cursor: not-allowed;\r
 }\r
 \r
@@ -23594,7 +23594,7 @@ ${content2}`;
     y$1(() => {
       setChecked(checked);
     }, [checked]);
-    return /* @__PURE__ */ u$5("label", { className: `CheckBoxLabel ${className ?? ""}`, disabled, children: [
+    return /* @__PURE__ */ u$5("label", { className: `CheckBoxLabel ${className ?? ""}`, "aria-disabled": disabled, children: [
       /* @__PURE__ */ u$5("span", { className: "IconWrapper", children: [
         /* @__PURE__ */ u$5(
           "input",
@@ -24032,7 +24032,7 @@ ${content2}`;
             border border-menu ${className}`,
         onClick: handleClick,
         onTouchStart: handleClick,
-        disabled,
+        "aria-disabled": disabled,
         title: title2,
         children: loading ? /* @__PURE__ */ u$5("div", { className: "flex justify-center items-center w-full h-full", children: /* @__PURE__ */ u$5(IconLoading, { className: "w-4 h-4" }) }) : /* @__PURE__ */ u$5(k$3, { children: [
           Icon && /* @__PURE__ */ u$5(Icon, {}),

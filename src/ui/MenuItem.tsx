@@ -52,7 +52,7 @@ export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = fals
             border border-menu ${className}`}
             onClick={handleClick}
             onTouchStart={handleClick}
-            disabled={disabled}
+            aria-disabled={disabled}
             title={title}
         >
             {loading

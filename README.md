@@ -4,16 +4,15 @@
 
 ## A GreasyFork script to export the chat history of [ChatGPT](https://chatgpt.com/)
 
+### Fork of [pionxzh/chatgpt-exporter](https://github.com/pionxzh/chatgpt-exporter) with custom image handling
+
 [![license][license-image]][license-url]
 [![release][release-image]][release-url]
-[![GreasyFork][GreasyFork-image]][GreasyFork-url]
 
-[license-image]: https://img.shields.io/github/license/pionxzh/chatgpt-exporter?color=red
-[license-url]: https://github.com/pionxzh/chatgpt-exporter/blob/master/LICENSE
-[release-image]: https://img.shields.io/github/v/release/pionxzh/chatgpt-exporter?color=blue
-[release-url]: https://github.com/pionxzh/chatgpt-exporter/releases/latest
-[GreasyFork-image]: https://img.shields.io/static/v1?label=%20&message=GreasyFork&style=flat-square&labelColor=7B0000&color=960000&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3ggEBCQHM3fXsAAAAVdJREFUOMudkz2qwkAUhc/goBaGJBgUtBCZyj0ILkpwAW7Bws4yO3AHLiCtEFD8KVREkoiFxZzX5A2KGfN4F04zMN+ce+5c4LMUgDmANYBnrnV+plBSi+FwyHq9TgA2LQpvCiEiABwMBtzv95RSfoNEHy8DYBzHrNVqVEr9BWKcqNFoxF6vx3a7zc1mYyC73a4MogBg7vs+z+czO50OW60Wt9stK5UKp9Mpj8cjq9WqDTBHnjAdxzGQZrPJw+HA31oulzbAWgLoA0CWZVBKIY5jzGYzdLtdE9DlcrFNrY98zobqOA6TJKHW2jg4nU5sNBpFDp6mhVe5rsvVasUwDHm9Xqm15u12o+/7Hy0gD8KatOd5vN/v1FozTVN6nkchxFuI6hsAAIMg4OPxMJCXdtTbR7JJCMEgCJhlGUlyPB4XfumozInrupxMJpRSRtZlKoNYl+m/6/wDuWAjtPfsQuwAAAAASUVORK5CYII=
-[GreasyFork-url]: https://greasyfork.org/scripts/456055-chatgpt-exporter
+[license-image]: https://img.shields.io/github/license/ductai199x/chatgpt-exporter?color=red
+[license-url]: https://github.com/ductai199x/chatgpt-exporter/blob/master/LICENSE
+[release-image]: https://img.shields.io/github/v/release/ductai199x/chatgpt-exporter?color=blue
+[release-url]: https://github.com/ductai199x/chatgpt-exporter/releases/latest
 
 English &nbsp;&nbsp;|&nbsp;&nbsp; [Français](./README_FR.md) &nbsp;&nbsp;|&nbsp;&nbsp; [Indonesia](./README_ID.md) &nbsp;&nbsp;|&nbsp;&nbsp; [한국어](./README_KR.md) &nbsp;&nbsp;|&nbsp;&nbsp; [Türkçe](./README_TR.md)
 
@@ -33,22 +32,30 @@ English &nbsp;&nbsp;|&nbsp;&nbsp; [Français](./README_FR.md) &nbsp;&nbsp;|&nbsp
 
 ### UserScript
 
-| Greasyfork                                                                        | GitHub                                                                                       |
-| --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| GitHub (this fork)                                                                   | Greasyfork (upstream)                                                             |
+| ------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
 | [![Install][Install-1-image]][install-1-url] | [![Install][Install-2-image]][install-2-url] |
 
 [Install-1-image]: https://img.shields.io/badge/-Install-blue
-[Install-1-url]: https://greasyfork.org/scripts/456055-chatgpt-exporter
+[Install-1-url]: https://github.com/ductai199x/chatgpt-exporter/releases/latest/download/chatgpt.user.js
 [Install-2-image]: https://img.shields.io/badge/-Install-blue
-[Install-2-url]: https://raw.githubusercontent.com/pionxzh/chatgpt-exporter/master/dist/chatgpt.user.js
+[Install-2-url]: https://greasyfork.org/scripts/456055-chatgpt-exporter
 
 #
 
-[📚 Supported Formats](#-supported-formats) &nbsp;&nbsp;|&nbsp;&nbsp; [💡 Example](#-example) &nbsp;&nbsp;|&nbsp;&nbsp; [📤 Export Multiple Conversations](#-export-multiple-conversations) &nbsp;&nbsp;|&nbsp;&nbsp; [🤝 Contribution](#-contribution) &nbsp;&nbsp;|&nbsp;&nbsp; [⭐ Star History](#-star-history)
+[📚 Supported Formats](#-supported-formats) &nbsp;&nbsp;|&nbsp;&nbsp; [💡 Example](#-example) &nbsp;&nbsp;|&nbsp;&nbsp; [📤 Export Multiple Conversations](#-export-multiple-conversations) &nbsp;&nbsp;|&nbsp;&nbsp; [🔧 What's Different in This Fork](#-whats-different-in-this-fork)
 
 </div>
 
 #
+
+## 🔧 What's Different in This Fork
+
+- **DOM scraping for generated images** — Upstream fetches `sediment://` images via the OpenAI file download API. This fork scrapes the high-res rendered image directly from the page DOM, targeting the sharp/full-quality version inside `div.relative.z-1` containers.
+- **JPEG compression** — Scraped images are re-encoded as JPEG at 0.95 quality to reduce exported file size.
+- **Dual asset pointer support** — Handles both legacy `file-service://` (via API) and current `sediment://` (via DOM scraping) image pointers.
+- **Image fetch error fallback** — `getBase64FromImageUrl` has a try/catch with a fetch+blob fallback when canvas conversion fails.
+- **Standardized CI/CD** — Build artifacts are not committed to the repo. Releases are created manually and the built userscript is uploaded as a GitHub Release asset.
 
 ## 📚 Supported Formats
 
@@ -240,18 +247,6 @@ Select your export format from the dropdown on the bottom left. You can choose f
 
 Click the button to perform the action you want.
 
-- **Archive** -  Archived chat sessions will disappear from the sidebar and can be managed in ChatGPT settings. See [#199](https://github.com/pionxzh/chatgpt-exporter/issues/199) for more details.
+- **Archive** -  Archived chat sessions will disappear from the sidebar and can be managed in ChatGPT settings.
 - **Delete** - Deletes the selected conversations.
 - **Export** - Exports the selected conversations in the format chosen using the format selector.
-
-## 🤝 Contribution
-
-See [CONTRIBUTING.md](./CONTRIBUTING.md)
-
-## ⭐ Star History
-
-<div align="center">
-
-<img src="https://api.star-history.com/svg?repos=pionxzh/chatgpt-exporter&type=Date" width="600" height="400" alt="Star History Chart" valign="middle">
-
-</div>

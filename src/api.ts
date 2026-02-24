@@ -1,7 +1,7 @@
 import urlcat from 'urlcat'
 import { apiUrl, baseUrl } from './constants'
 import { getChatIdFromUrl, getConversationFromSharePage, getPageAccessToken, isSharePage } from './page'
-import { blobToDataURL } from './utils/dom'
+import { blobToDataURL, getCompressedBase64FromImageUrl } from './utils/dom'
 import { memorize } from './utils/memorize'
 
 interface ApiSession {
@@ -422,7 +422,7 @@ export async function getCurrentChatId(): Promise<string> {
 }
 
 async function fetchImageFromPointer(uri: string) {
-    const pointer = uri.replace('sediment://', '')
+    const pointer = uri.replace('file-service://', '').replace('sediment://', '')
     const imageDetails = await fetchApi<ApiFileDownload>(fileDownloadApi(pointer))
     if (imageDetails.status === 'error') {
         console.error('Failed to fetch image asset', imageDetails.error_code, imageDetails.error_message)
@@ -435,6 +435,44 @@ async function fetchImageFromPointer(uri: string) {
     return base64.replace(/^data:.*?;/, `data:${image.headers.get('content-type')};`)
 }
 
+function formatFileId(fileIdWithoutHyphens: string): string {
+    return fileIdWithoutHyphens.replace(
+        /^(.{8})(.{4})(.{4})(.{4})(.{12})$/,
+        '$1-$2-$3-$4-$5',
+    )
+}
+
+async function scrapeRenderedImage(assetPointer: string): Promise<string | null> {
+    const rawFileId = assetPointer.replace('sediment://file_', '')
+    const formattedFileId = formatFileId(rawFileId)
+
+    const imageDivs = Array.from(document.querySelectorAll('div[aria-label="Generated image"]'))
+
+    for (const div of imageDivs) {
+        const imgs = div.querySelectorAll('img')
+        if (!imgs.length) continue
+
+        const matchingImg = Array.from(imgs).find(img => img.src.includes(formattedFileId))
+        if (matchingImg) {
+            const sharpDivs = Array.from(div.querySelectorAll('div.relative.z-1'))
+            for (const sharpDiv of sharpDivs) {
+                const sharpImgs = Array.from(sharpDiv.querySelectorAll('img'))
+                for (const sharpImg of sharpImgs) {
+                    if (sharpImg.src.includes(formattedFileId)) {
+                        const base64 = await getCompressedBase64FromImageUrl(sharpImg.src)
+                        return base64
+                    }
+                }
+            }
+
+            console.warn(`No sharp image matching file ID ${formattedFileId} found inside div.relative.z-1`)
+        }
+    }
+
+    console.warn('Could not find sharp image for', formattedFileId)
+    return null
+}
+
 /** replaces `sediment://` pointers with data uris containing the image */
 /** avoid errors in parsing multimodal parts we don't understand */
 async function replaceImageAssets(conversation: ApiConversation): Promise<void> {
@@ -445,7 +483,10 @@ async function replaceImageAssets(conversation: ApiConversation): Promise<void> 
         && part.content_type === 'image_asset_pointer'
         && 'asset_pointer' in part
         && typeof part.asset_pointer === 'string'
-        && part.asset_pointer.startsWith('sediment://')
+        && (
+            part.asset_pointer.startsWith('file-service://')
+            || part.asset_pointer.startsWith('sediment://')
+        )
     }
 
     const imageAssets = Object.values(conversation.mapping).flatMap((node) => {
@@ -468,11 +509,17 @@ async function replaceImageAssets(conversation: ApiConversation): Promise<void> 
     await Promise.all([
         ...imageAssets.map(async (asset) => {
             try {
-                const newAssetPointer = await fetchImageFromPointer(asset.asset_pointer)
+                let newAssetPointer: string | null = null
+                if (asset.asset_pointer.startsWith('file-service://')) {
+                    newAssetPointer = await fetchImageFromPointer(asset.asset_pointer)
+                }
+                else if (asset.asset_pointer.startsWith('sediment://')) {
+                    newAssetPointer = await scrapeRenderedImage(asset.asset_pointer)
+                }
                 if (newAssetPointer) asset.asset_pointer = newAssetPointer
             }
             catch (error) {
-                console.error('Failed to fetch image asset', error)
+                console.error('Failed to scrape image asset', error)
             }
         }),
         ...executionOutputs.map(async (msg) => {

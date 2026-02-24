@@ -10,7 +10,14 @@ export function getBase64FromImg(el: HTMLImageElement) {
 
 export async function getBase64FromImageUrl(url: string) {
     const img = await loadImage(url)
-    return getBase64FromImg(img)
+    try {
+        return getBase64FromImg(img)
+    }
+    catch {
+        const response = await fetch(url)
+        const blob = await response.blob()
+        return await blobToDataURL(blob)
+    }
 }
 
 function loadImage(url: string): Promise<HTMLImageElement> {
@@ -29,5 +36,38 @@ export function blobToDataURL(blob: Blob) {
         reader.onerror = reject
         reader.onload = () => resolve(reader.result as string)
         reader.readAsDataURL(blob)
+    })
+}
+
+export async function getCompressedBase64FromImageUrl(url: string, quality = 0.95): Promise<string> {
+    const response = await fetch(url)
+    const blob = await response.blob()
+    return await blobToCompressedBase64(blob, quality)
+}
+
+function blobToCompressedBase64(blob: Blob, quality: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const img = new Image()
+        const url = URL.createObjectURL(blob)
+
+        img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = img.width
+            canvas.height = img.height
+            const ctx = canvas.getContext('2d')!
+            ctx.drawImage(img, 0, 0)
+
+            const base64 = canvas.toDataURL('image/jpeg', quality)
+
+            URL.revokeObjectURL(url)
+            resolve(base64)
+        }
+
+        img.onerror = (err) => {
+            URL.revokeObjectURL(url)
+            reject(err)
+        }
+
+        img.src = url
     })
 }
